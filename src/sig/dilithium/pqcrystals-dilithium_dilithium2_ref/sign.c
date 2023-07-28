@@ -167,8 +167,8 @@ rej:
     polyveck_caddq(&w1);
     
     
-    /*ここにhigh bits関数が必要 line7 */
-    
+    /*ここにhigh bits関数が必要 w1,2/gamma line7 */
+    w1 = highbits(uint32_t *w1, uint32_t r, uint32_t 32) 
     
     
     /*masking-function befor polyveck_decompose(&w1, &w0, &w1);*/
@@ -236,7 +236,7 @@ rej:
   polyvecl_reduce(&z);
     
     /*lowbits line10*/
-    
+   lowbits(uint32_t *r0, uint32_t  r , uint32_t base);
     
     cycle[6] = 0;
     for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
