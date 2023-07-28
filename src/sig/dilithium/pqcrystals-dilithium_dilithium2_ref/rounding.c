@@ -219,6 +219,20 @@ void highbits(uint32_t *r1, uint32_t r, uint32_t base) {
 }
 
 
+void lowbits(uint32_t *r0, uint32_t  r , uint32_t base)
+{
+    uint32_t r0p,b;
+    //activate_trigger_aux();
+    r0p = (r<<(32-base));
+    //desactivate_trigger_aux();
+    b   = (-(r0p>>(31)));
+    b   = b<<base;
+    r0p = (r0p>>(32-base));
+    r0p = r0p^b;
+    *r0 = r0p;
+}
+
+
 void masking_arithmetic_to_boolean_decompose(uint32_t* pR1, uint32_t* pR0, uint32_t *pR, uint32_t base)
 {
     uint32_t mask = (1 << base) - 1;
