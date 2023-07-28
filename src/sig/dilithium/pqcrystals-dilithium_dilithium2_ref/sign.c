@@ -87,7 +87,8 @@ int mask_crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 *              - uint8_t *m:     pointer to message to be signed
 *              - size_t mlen:    length of message
 *              - uint8_t *sk:    pointer to bit-packed secret key
-*
+*  
+*     r0ってなんですか？
 * Returns 0 (success)
 **************************************************/
 int mask_crypto_sign_signature(uint8_t *sig,
@@ -236,7 +237,7 @@ rej:
   polyvecl_reduce(&z);
     
     /*lowbits line10*/
-   lowbits(uint32_t *r0, uint32_t  r , uint32_t base);
+     lowbits(uint32_t *r0, uint32_t  r , uint32_t base);
     
     cycle[6] = 0;
     for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
