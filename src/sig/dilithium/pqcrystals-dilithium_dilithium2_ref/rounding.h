@@ -27,6 +27,9 @@ int32_t use_hint(int32_t a, unsigned int hint);
 #define highbits DILITHIUM_NAMESPACE(highbits)
 void highbits(uint32_t *r1, uint32_t r, uint32_t base);
 
+#define lowbits DILITHIUM_NAMESPACE(lowbits)
+void lowbits(uint32_t *r0, uint32_t  r , uint32_t base);
+
 #define masking_arithmetic_to_boolean_decompose DILITHIUM_NAMESPACE(masking_arithmetic_to_boolean_decompose)
 void masking_arithmetic_to_boolean_decompose(uint32_t* pR1, uint32_t* pR0, uint32_t *pR, uint32_t base);
 
