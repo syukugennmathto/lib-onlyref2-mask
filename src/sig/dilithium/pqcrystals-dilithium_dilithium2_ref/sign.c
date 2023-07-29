@@ -10,6 +10,7 @@
 #include "fips202.h"
 #include "noise.h"
 
+
 /*************************************************
 * Name:        crypto_sign_keypair
 *
@@ -22,13 +23,14 @@
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
+int mask_crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
     uint8_t seedbuf[2*SEEDBYTES + CRHBYTES];
     uint8_t tr[SEEDBYTES];
     uint8_t *rho, *rhoprime, *key;
     polyvecl mat[K];
     polyvecl s1, s1hat;
     polyveck s2, t1, t0;
+    
 
     /* Get randomness for rho, rhoprime and key */
     randombytes(seedbuf, SEEDBYTES);
@@ -53,10 +55,6 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
     for (uint32_t i = 0; i < K; ++i)
         small_bounded_noise_generation_256((uint32_t*)s2.vec[i].coeffs, rhoprime, nonce++);
 
-
-
-
-    
     /* Matrix-vector multiplication */
     s1hat = s1;
     polyvecl_ntt(&s1hat);
@@ -70,7 +68,7 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
     /* Extract t1 and write public key */
     polyveck_caddq(&t1);
     polyveck_power2round(&t1, &t0, &t1);
-    pack_pk(pk, rho, &t1);
+        pack_pk(pk, rho, &t1);
 
     /* Compute H(rho, t1) and write secret key */
     shake256(tr, SEEDBYTES, pk, CRYPTO_PUBLICKEYBYTES);
@@ -89,10 +87,11 @@ int crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 *              - uint8_t *m:     pointer to message to be signed
 *              - size_t mlen:    length of message
 *              - uint8_t *sk:    pointer to bit-packed secret key
-*
+*  
+*     r0ってなんですか？
 * Returns 0 (success)
 **************************************************/
-int crypto_sign_signature(uint8_t *sig,
+int mask_crypto_sign_signature(uint8_t *sig,
                           size_t *siglen,
                           const uint8_t *m,
                           size_t mlen,
@@ -106,6 +105,14 @@ int crypto_sign_signature(uint8_t *sig,
   polyveck t0, s2, w1, w0, h;
   poly cp;
   shake256incctx state;
+    long long int cycle[8] = {0,0,0,0,0,0,0,0},MAX = 1000;
+    int times =0;
+    int ret = 0;
+    
+    uint32_t a0_w1[K * N];
+    uint32_t a1_w1[K * N];
+    uint32_t a0_w0[K * N];
+    uint32_t a1_w0[K * N];
 
   rho = seedbuf;
   tr = rho + SEEDBYTES;
@@ -114,70 +121,108 @@ int crypto_sign_signature(uint8_t *sig,
   rhoprime = mu + CRHBYTES;
   unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
-  /* Compute CRH(tr, msg)  = sam */
+  /* Compute CRH(tr, msg) */
   shake256_inc_init(&state);
   shake256_inc_absorb(&state, tr, SEEDBYTES);
   shake256_inc_absorb(&state, m, mlen);
   shake256_inc_finalize(&state);
   shake256_inc_squeeze(mu, CRHBYTES, &state);
 
-#ifdef DILITHIUM_RANDOMIZED_SIGNING
-  randombytes(rhoprime, CRHBYTES);
-#else
-    shake256_noise(rhoprime, CRHBYTES, key, SEEDBYTES + CRHBYTES);
-#endif
+
 
   /* Expand matrix and transform vectors */
   polyvec_matrix_expand(mat, rho);
   polyvecl_ntt(&s1);
   polyveck_ntt(&s2);
   polyveck_ntt(&t0);
-
+  
 
 
 rej:
-  /* Sample intermediate vector y */
+    
+#ifdef DILITHIUM_RANDOMIZED_SIGNING
+  randombytes(rhoprime, CRHBYTES);
+#else
+    shake256_noise(rhoprime, CRHBYTES, key, SEEDBYTES + CRHBYTES);
+#endif
+    for (uint32_t i = 0; i < dilithium_l; ++i)large_bounded_noise_generation(&s1.vec[i], rhoprime, nonce++);
+    for (uint32_t i = 0; i < dilithium_k; ++i)large_bounded_noise_generation(&s2.vec[i], rhoprime, nonce++);
+    
+    times = times + 1;
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+
+    
+
+    
+  /*Sample intermediate vector y line5 */
   polyvecl_uniform_gamma1(&y, rhoprime, nonce++);
 
-    for (uint32_t i = 0; i < dilithium_l; ++i)
-        large_bounded_noise_generation(&s1.vec[i], rhoprime, nonce++);
-
-    for (uint32_t i = 0; i < dilithium_k; ++i)
-        large_bounded_noise_generation(&s2.vec[i], rhoprime, nonce++);
-
-
-
-
-  /* Matrix-vector multiplication */
+  /*Matrix-vector multiplication line6 */
   z = y;
   polyvecl_ntt(&z);
   polyvec_matrix_pointwise_montgomery(&w1, mat, &z);
   polyveck_reduce(&w1);
   polyveck_invntt_tomont(&w1);
+    /* whta is ? */
+    polyveck_caddq(&w1);
+    
+    
+    /*ここにhigh bits関数が必要 w1,2/gamma line7 */
+    w1 = highbits(uint32_t *w1, uint32_t r, uint32_t 32) 
+    
+    
+    /*masking-function befor polyveck_decompose(&w1, &w0, &w1);*/
+    // forループを使用してw1の各要素に対してdecompose関数を呼び出す
+    /* for (uint32_t i = 0; i < K; ++i) {
+         cycle[0] = cycle[0] + 1;
+            decompose_array(a0_w1, a1_w1, w1.vec[i].coeffs, K * N);
+    }
+    
+    
+    for (uint32_t i = 0; i < K; ++i) {
+        cycle[0] = cycle[0] + 1;
+        prime_decompose(&a0_w1[i * N], &a1_w1[i * N], w1.vec[i].coeffs[0]);
+    }
+     for (uint32_t i = 0; i < K; ++i) {
+         cycle[0] = cycle[0] + 1;
+         masking_arithmetic_to_boolean_decompose(&a0_w1[i * N], &a1_w1[i * N], (uint32_t*)w1.vec[i].coeffs, 32);
+         masking_arithmetic_to_boolean_decompose(&a0_w0[i * N], &a1_w0[i * N], (uint32_t*)w0.vec[i].coeffs, 32);
+ // ここでmasking_arithmetic_to_boolean_decomposeを呼び出す
+     }
+     */
+    
 
+    
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+    if(cycle[6] > MAX){ret = 1; goto fish;}
+    
+    // forループを使用してw0の各要素に対してdecompose関数を呼び出す
+    /*for (uint32_t i = 0; i < K; ++i) {
+        
+            decompose_array(a0_w0, a1_w0, w0.vec[i].coeffs, K * N);
+    }
+   
+    
+    for (uint32_t i = 0; i < K; ++i) {
+        cycle[0] = cycle[0] + 1;
+        prime_decompose(&a0_w0[i * N], &a1_w0[i * N], w0.vec[i].coeffs[0]);
+    }
+     */
+    
 
 
     
-    /* Decompose w and call the random oracle */
-    polyveck_caddq(&w1);
-    /*masking-function befor polyveck_decompose(&w1, &w0, &w1);*/
-    // forループを使用してw1の各要素に対してdecompose関数を呼び出す
-    for (uint32_t i = 0; i < K; ++i) {
-        for (uint32_t j = 0; j < N; ++j) {
-            decompose(&w1.vec[i].coeffs[j], w1.vec[i].coeffs[j]);
-        }
-    }
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+    if(cycle[6] > MAX){ret = 1; goto fish;}
+    
+    cycle[1] = cycle[1] + 1;
+    
+  polyveck_pack_w1(sig, &w1);
 
-    // forループを使用してw0の各要素に対してdecompose関数を呼び出す
-    for (uint32_t i = 0; i < K; ++i) {
-        for (uint32_t j = 0; j < N; ++j) {
-            decompose(&w0.vec[i].coeffs[j], w0.vec[i].coeffs[j]);
-        }
-    }
-
-    polyveck_pack_w1(sig, &w1);
-
-  /*hash function*/
+  /*hash function  Hfunction line8? */
   shake256_inc_ctx_reset(&state);
   shake256_inc_absorb(&state, mu, CRHBYTES);
   shake256_inc_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
@@ -185,14 +230,23 @@ rej:
   shake256_inc_squeeze(sig, SEEDBYTES, &state);
   poly_challenge(&cp, sig);
   poly_ntt(&cp);
-
-  /* Compute z, reject if it reveals secret */
+  /* Compute z, reject if it reveals secret line9 */
   polyvecl_pointwise_poly_montgomery(&z, &cp, &s1);
   polyvecl_invntt_tomont(&z);
   polyvecl_add(&z, &z, &y);
   polyvecl_reduce(&z);
-  if(polyvecl_chknorm(&z, GAMMA1 - BETA))
-    goto rej;
+    
+    /*lowbits line10*/
+     lowbits(uint32_t *r0, uint32_t  r , uint32_t base);
+    
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+    if(cycle[6] > MAX){ret = 1; goto fish;}
+    
+    /* line11 */
+    if(polyvecl_chknorm(&z, GAMMA1 - BETA)){ goto rej;}
+    
+
 
   /* Check that subtracting cs2 does not change high bits of w and low bits
    * do not reveal secret information */
@@ -200,27 +254,60 @@ rej:
   polyveck_invntt_tomont(&h);
   polyveck_sub(&w0, &w0, &h);
   polyveck_reduce(&w0);
-  if(polyveck_chknorm(&w0, GAMMA2 - BETA))
-    goto rej;
+    
+    cycle[2] = cycle[2] + 1;
+    
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+    if(cycle[6] > MAX){ret = 1; goto fish;}
+    
+    /* line12 */
+    if(polyveck_chknorm(&w0, GAMMA2 - BETA)){ goto rej;}
+    
+    /* line12 */
+    if(polyveck_chknorm(&h, GAMMA2)){ goto rej;}
+    
+    /* line13 */
+    if(n > OMEGA){goto rej;}
 
   /* Compute hints for w1 */
   polyveck_pointwise_poly_montgomery(&h, &cp, &t0);
   polyveck_invntt_tomont(&h);
   polyveck_reduce(&h);
-  if(polyveck_chknorm(&h, GAMMA2))
-    goto rej;
+    
+    cycle[3] = cycle[3] + 1;
+    
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+    if(cycle[6] > MAX){ret = 1; goto fish;}
+    
 
-  polyveck_add(&w0, &w0, &h);
-  n = polyveck_make_hint(&h, &w0, &w1);
-  if(n > OMEGA)
-    goto rej;
+
+   polyveck_add(&w0, &w0, &h);
+   n = polyveck_make_hint(&h, &w0, &w1);
+
+
+
+    
+    cycle[6] = 0;
+    for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
+    if(cycle[6] > MAX){ret = 1; goto fish;}
+    
+    cycle[4] = cycle[4] + 1;
+    
+
+    
+    cycle[5] = cycle[5] + 1;
 
   shake256_inc_ctx_release(&state);
 
   /* Write signature */
   pack_sig(sig, sig, &z, &h);
   *siglen = CRYPTO_BYTES;
-  return 0;
+    
+fish:
+    printf("n: %u\n", n);
+    return ret;
 }
 
 /*************************************************
@@ -239,17 +326,14 @@ rej:
 *
 * Returns 0 (success)
 **************************************************/
-int crypto_sign(uint8_t *sm,
-                size_t *smlen,
-                const uint8_t *m,
-                size_t mlen,
-                const uint8_t *sk)
+int mask_crypto_sign(uint8_t *sm,size_t *smlen,const uint8_t *m,size_t mlen,const uint8_t *sk)
 {
   size_t i;
 
-  for(i = 0; i < mlen; ++i)
-    sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
-  crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, sk);
+    for(i = 0; i < mlen; ++i){
+        sm[CRYPTO_BYTES + mlen - 1 - i] = m[mlen - 1 - i];
+    }
+    mask_crypto_sign_signature(sm, smlen, sm + CRYPTO_BYTES, mlen, sk);
   *smlen += mlen;
   return 0;
 }
@@ -268,7 +352,7 @@ int crypto_sign(uint8_t *sm,
 *
 * Returns 0 if signature could be verified correctly and -1 otherwise
 **************************************************/
-int crypto_sign_verify(const uint8_t *sig,
+int mask_crypto_sign_verify(const uint8_t *sig,
                        size_t siglen,
                        const uint8_t *m,
                        size_t mlen,
@@ -363,7 +447,7 @@ int crypto_sign_open(uint8_t *m,
     goto badsig;
 
   *mlen = smlen - CRYPTO_BYTES;
-  if(crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, pk))
+  if(mask_crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, pk))
     goto badsig;
   else {
     /* All good, copy msg, return 0 */
