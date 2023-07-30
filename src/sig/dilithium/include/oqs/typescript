@@ -1,0 +1,15 @@
+Script started on Wed Jul 26 18:05:28 2023
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                                                       ]7;file://s-yokoyama-labnoiMac.local/Users/s-yokoyama_lab/Documents/liboqs-main-2/src/sig/dilithium/include/oqs[0m[27m[24m[J(base) s-yokoyama_lab@s-yokoyama-labnoiMac oqs % [K[?2004hlls[?2004l
+aes.h			kem_bike.h		kem_hqc.h		oqs.h			sha2.h			sig.h			sig_sphincs.h
+common.h		kem_classic_mceliece.h	kem_kyber.h		oqsconfig.h		sha3.h			sig_dilithium.h		typescript
+kem.h			kem_frodokem.h		kem_ntruprime.h		rand.h			sha3x4.h		sig_falcon.h
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                                                       ]7;file://s-yokoyama-labnoiMac.local/Users/s-yokoyama_lab/Documents/liboqs-main-2/src/sig/dilithium/include/oqs[0m[27m[24m[J(base) s-yokoyama_lab@s-yokoyama-labnoiMac oqs % [K[?2004hppwd[?2004l
+/Users/s-yokoyama_lab/Documents/liboqs-main-2/src/sig/dilithium/include/oqs
+[1m[7m%[27m[1m[0m                                                                                                                                                                                                                                       ]7;file://s-yokoyama-labnoiMac.local/Users/s-yokoyama_lab/Documents/liboqs-main-2/src/sig/dilithium/include/oqs[0m[27m[24m[J(base) s-yokoyama_lab@s-yokoyama-labnoiMac oqs % [K[?2004heexit[?2004l
+
+Saving session...
+...copying shared history...
+...saving history...truncating history files...
+...completed.
+
+Script done on Wed Jul 26 18:05:42 2023

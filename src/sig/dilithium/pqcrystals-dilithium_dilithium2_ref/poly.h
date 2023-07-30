@@ -84,4 +84,5 @@ void polyw1_pack(uint8_t *r, const poly *a);
 
 static unsigned int rej_eta(int32_t *a, size_t len, const uint8_t *buf, size_t buflen);
 
+
 #endif

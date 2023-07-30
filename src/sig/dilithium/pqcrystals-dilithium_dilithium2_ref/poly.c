@@ -316,18 +316,17 @@ static unsigned int rej_uniform(int32_t *a,
                                 unsigned int buflen)
 {
   unsigned int ctr, pos;
-  uint32_t t;
+  int32_t t;
   DBENCH_START();
 
   ctr = pos = 0;
   while(ctr < len && pos + 3 <= buflen) {
     t  = buf[pos++];
-    t |= (uint32_t)buf[pos++] << 8;
-    t |= (uint32_t)buf[pos++] << 16;
-    t &= 0x7FFFFF;
+    t |= (uint8_t)buf[pos++] << 8;  //32/4 = 8
+    t |= (uint8_t)buf[pos++] << 16;  // 32/2=16
+    t &= 0x7FFFFF; //0x7FFFFF
 
-    if(t < Q)
-      a[ctr++] = t;
+    if(t < Q) a[ctr++] = t;
   }
 
   DBENCH_STOP(*tsample);
@@ -389,7 +388,7 @@ void poly_uniform(poly *a,
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_eta(int32_t *a, size_t len, const uint8_t *buf, size_t buflen)
+static unsigned int rej_eta(int32_t *a, size_t len, const unsigned char *buf, size_t buflen)
 {
     unsigned int ctr, pos;
     

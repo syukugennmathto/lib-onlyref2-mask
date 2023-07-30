@@ -47,6 +47,7 @@ void shake256_noise(unsigned char *output,unsigned long long outlen,const unsign
 
 static unsigned int rej_eta(int32_t *a, size_t len, const uint8_t *buf, size_t buflen);
 
+
 #define shake128_inc_init OQS_SHA3_shake128_inc_init
 #define shake128_inc_absorb OQS_SHA3_shake128_inc_absorb
 #define shake128_inc_finalize OQS_SHA3_shake128_inc_finalize
