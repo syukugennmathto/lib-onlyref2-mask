@@ -32,6 +32,12 @@
 #include <sys/appleapiopts.h>
 #include <sys/cdefs.h>
 
+#include <stdint.h>
+#include "lfsr.h"
+
+#define rand_uint32_t() lfsr_inc_32()
+#define rand_uint32_t_masking() lfsr_inc_32()
+
 #ifdef __APPLE_API_UNSTABLE
 __BEGIN_DECLS
 void read_random(void* buffer, unsigned int numBytes);

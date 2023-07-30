@@ -14,8 +14,8 @@
 #define large_noise_bound (1 << dilithium_gamma) - 1
 #define dilithium_nu 5
 #define low_noise_bound dilithium_nu
-
-
+#define shares 6
+#define MAX_SIGN 652
 
 
 
