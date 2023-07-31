@@ -47,8 +47,8 @@ int mask_crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
     polyvec_matrix_expand(mat, rho);
 
     /* Sample short vectors s1 and s2 */
-    //polyvecl_uniform_eta(&s1, rhoprime, 0);
-    //polyveck_uniform_eta(&s2, rhoprime, L);
+    polyvecl_uniform_eta(&s1, rhoprime, 0);
+    polyveck_uniform_eta(&s2, rhoprime, L);
 
     // mask the s1 and s2 vectors with small_bounded_noise_generation_256
     unsigned char nonce = 0;
@@ -93,7 +93,7 @@ int mask_crypto_sign_keypair(uint8_t *pk, uint8_t *sk) {
 *              - uint8_t *m:     pointer to message to be signed
 *              - size_t mlen:    length of message
 *              - uint8_t *sk:    pointer to bit-packed secret key
-*  
+*
 *     r0ってなんですか？
 * Returns 0 (success)
 **************************************************/
@@ -179,7 +179,11 @@ rej:
     polyveck_caddq(&w1);
     
     /*ここにhigh bits関数が必要 w1,2/gamma line7 */
-    for (uint32_t i = 0; i < K; ++i) masking_arithmetic_to_boolean_highbits((uint32_t *)(w1.vec[i].coeffs), (uint32_t *)(w1.vec[i].coeffs), alpha);
+    for (uint32_t i = 0; i < K; ++i) {
+        for (size_t j = 0; j < N; j++){
+            num_masking_arithmetic_to_boolean_highbits(w1.vec[i].coeffs[j],w1.vec[i].coeffs[j], alpha);
+        }
+    }
     
     cycle[6] = 0;
     for(int i =0;i<7;++i){cycle[6] = cycle[6] + cycle[i];}
@@ -190,6 +194,7 @@ rej:
   polyveck_pack_w1(sig, &w1);
 
   /*hash function  Hfunction line8? */
+  shake256_inc_init(&state);
   shake256_inc_ctx_reset(&state);
   shake256_inc_absorb(&state, mu, CRHBYTES);
   shake256_inc_absorb(&state, sig, K*POLYW1_PACKEDBYTES);
@@ -209,7 +214,14 @@ rej:
     if(cycle[6] > MAX){ret = 1; goto fish;}
     
     /* line11 */
-    if(polyvecl_chknorm(&z, GAMMA1 - BETA)){ goto rej;}
+    //if(polyvecl_chknorm(&z, GAMMA1 - BETA)){ goto rej;}
+    
+    for (uint32_t j = 0; j < N; ++j){
+        for (uint32_t i = 0; i < L; ++i){
+            if(number_chknorm(z.vec[i].coeffs[j], (GAMMA1 - BETA))){ goto rej;
+            }
+        }
+    }
     
 
 
@@ -222,8 +234,11 @@ rej:
     
     
     /*lowbits line10*/
-    for (uint32_t i = 0; i < K; ++i) masking_arithmetic_to_boolean_lowbits((uint32_t *)(w0.vec[i].coeffs), (uint32_t *)(w0.vec[i].coeffs), alpha);
-    
+    for (uint32_t i = 0; i < K; ++i) {
+        for (size_t j = 0; j < N; j++){
+            num_masking_arithmetic_to_boolean_lowbits(w0.vec[i].coeffs[j],w0.vec[i].coeffs[j], alpha);
+        }
+    }
     cycle[2] = cycle[2] + 1;
     
     cycle[6] = 0;
@@ -252,8 +267,7 @@ rej:
 
     for (size_t i = 0; i < L; i++) {
         for (size_t j = 0; j < N; j++) {
-            uint32_t val = masking_arithmetic_makeint((uint32_t *)&w0.vec[i].coeffs[j], (uint32_t *)&w1.vec[i].coeffs[j], alpha);
-            h.vec[i].coeffs[j] = (int32_t)val;
+            h.vec[i].coeffs[j] = num_masking_arithmetic_makeint(w0.vec[i].coeffs[j],w1.vec[i].coeffs[j], alpha);
         }
     }
 
@@ -334,7 +348,7 @@ int mask_crypto_sign(uint8_t *sm,size_t *smlen,const uint8_t *m,size_t mlen,cons
 *
 * Returns 0 if signature could be verified correctly and -1 otherwise
 **************************************************/
-int mask_crypto_sign_verify(const uint8_t *sig,
+cst_8t mask_crypto_sign_verify(const uint8_t *sig,
                        size_t siglen,
                        const uint8_t *m,
                        size_t mlen,
@@ -350,19 +364,23 @@ int mask_crypto_sign_verify(const uint8_t *sig,
   polyvecl mat[K], z;
   polyveck t1, w1, h;
   shake256incctx state;
+  cst_8t result;
 
-  if(siglen != CRYPTO_BYTES)
-    return siglen;
+  //if(siglen != CRYPTO_BYTES)return siglen;
 
   unpack_pk(rho, &t1, pk);
-  if(unpack_sig(c, &z, &h, sig))
-    return -2;
+  if(unpack_sig(c, &z, &h, sig)) return result;
     
     /*line28 */
-  if(polyvecl_chknorm(&z, GAMMA1 - BETA))
-    return -3;
+    for (uint32_t j = 0; j < N; ++j){
+        for (uint32_t i = 0; i < L; ++i){
+            if(number_chknorm(z.vec[i].coeffs[j], GAMMA1 - BETA)){
+                return result;
+            }
+        }
+    }
 
-  /* Compute CRH(H(rho, t1), msg) line26 */
+  /* Compute CRH(H(rho, t1), msg) line28 */
   shake256(mu, SEEDBYTES, pk, CRYPTO_PUBLICKEYBYTES);
   shake256_inc_init(&state);
   shake256_inc_absorb(&state, mu, SEEDBYTES);
@@ -388,21 +406,37 @@ int mask_crypto_sign_verify(const uint8_t *sig,
 
   /* Reconstruct w1  line27*/
   polyveck_caddq(&w1);
+    for (size_t i = 0; i < L; i++) {
+        for (size_t j = 0; j < N; j++) {
+            h.vec[i].coeffs[j] = num_masking_arithmetic_makeint(w0.vec[i].coeffs[j],w1.vec[i].coeffs[j], alpha);
+        }
+    }
+    
   polyveck_use_hint(&w1, &w1, &h);
   polyveck_pack_w1(buf, &w1);
 
-  /* Call random oracle and verify challenge line28 */
-  shake256_inc_ctx_reset(&state); //sateだったところ
-  shake256_inc_absorb(&state, mu, CRHBYTES); //第一引数stateだったところ
-  shake256_inc_absorb(&state, buf, K*POLYW1_PACKEDBYTES); //第一引数stateだったところ
-  shake256_inc_finalize(&state); //sateだったところ
-  shake256_inc_squeeze(c2, SEEDBYTES, &state); //第3引数stateだったところ
-  shake256_inc_ctx_release(&state); //sateだったところ
-  for(i = 0; i < SEEDBYTES; ++i)
-    if(c[i] != c2[i])
-      return -4;
+    /* Call random oracle and verify challenge line28 */
+    shake256_inc_init(&state);
+    shake256_inc_ctx_reset(&state); // stateをリセット
+    shake256_inc_absorb(&state, mu, CRHBYTES); // muを追加
+    shake256_inc_absorb(&state, buf, K*POLYW1_PACKEDBYTES); // bufを追加
+    shake256_inc_finalize(&state); // stateを最終化
+    shake256_inc_squeeze(c2, SEEDBYTES, &state); // c2を得る
 
-  return 0;
+    
+    for(i = 0; i < SEEDBYTES; ++i){
+        result.a[i] = c[i];
+        result.b[i] = c2[i];
+    }
+
+    for(i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
+        result.c[i] = buf[i];
+        result.d[i] = sig[i];
+    }
+    
+    for(i = 0; i < SEEDBYTES; ++i) {if(c[i] != c2[i]) {return result;}}
+
+  return result;
 }
 
 /*************************************************
@@ -431,15 +465,15 @@ int crypto_sign_open(uint8_t *m,
     goto badsig;
 
   *mlen = smlen - CRYPTO_BYTES;
-  if(mask_crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, pk))
+  /*if(mask_crypto_sign_verify(sm, CRYPTO_BYTES, sm + CRYPTO_BYTES, *mlen, pk))
     goto badsig;
   else {
-    /* All good, copy msg, return 0 */
+    // All good, copy msg, return 0
     for(i = 0; i < *mlen; ++i)
       m[i] = sm[CRYPTO_BYTES + i];
     return 0;
   }
-
+*/
 badsig:
   /* Signature verification failed */
   *mlen = -1;
@@ -447,4 +481,23 @@ badsig:
     m[i] = 0;
 
   return -1;
+}
+
+int number_chknorm(int32_t a, int32_t B){
+  unsigned int i;
+  int32_t t;
+
+  if(B > (Q-1)/8)
+    return 1;
+
+  for(i = 0; i < N; ++i) {
+    /* Absolute value */
+    t = a >> 31;
+    t = a - (t & 2*a);
+
+    if(t >= B) {
+      return 1;
+    }
+  }
+ return 0;
 }

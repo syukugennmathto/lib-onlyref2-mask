@@ -303,7 +303,7 @@ void masking_boolean_refresh(uint32_t*pC, uint32_t *pA)
     }
 }
 
-void masking_boolean_fullrefresh(uint32_t*pC, uint32_t *pA)
+void masking_boolean_fullrefresh(uint32_t *pC, uint32_t *pA)
 {
     for(uint32_t j = 0; j < shares; ++j)
     {
@@ -513,4 +513,252 @@ uint32_t random_uint32_t()
     uint32_t r;
     randombytes((uint8_t *)&r, sizeof(uint32_t));
     return r;
+}
+
+
+// masking_arithmetic_to_boolean_decompose
+void num_masking_arithmetic_to_boolean_decompose(uint32_t pR1, uint32_t pR0, uint32_t pR, uint32_t base)
+{
+    uint32_t mask = (1 << base) - 1;
+    uint32_t b, pR0p, pR1p, sd_1 = (mask >> 1) + 1;
+
+    num_masking_arithmetic_to_boolean_convert(pR0p, pR);
+    num_masking_boolean_lshift(pR0p, pR0p, 32 - base);
+    num_masking_boolean_rshift(b, pR0p, 31);
+    num_masking_boolean_neg(b, b);
+    num_masking_boolean_lshift(b, b, base);
+    num_masking_boolean_rshift(pR0p, pR0p, 32 - base);
+    num_masking_boolean_xor(pR0, pR0p, b);
+
+    num_masking_arithmetic_add(b, pR, sd_1);
+    num_masking_arithmetic_to_boolean_convert(pR1p, b);
+    num_masking_boolean_rshift(pR1, pR1p, base);
+}
+
+// masking_arithmetic_to_boolean_highbits
+void num_masking_arithmetic_to_boolean_highbits(uint32_t pR1, uint32_t pR, uint32_t base)
+{
+    uint32_t mask = (1 << base) - 1;
+    uint32_t b, pR1p, sd_1 = (mask >> 1) + 1;
+    num_masking_arithmetic_add(b, pR, sd_1);
+    num_masking_arithmetic_to_boolean_convert(pR1p, b);
+    num_masking_boolean_rshift(pR1, pR1p, base);
+}
+
+// masking_arithmetic_to_boolean_lowbits
+void num_masking_arithmetic_to_boolean_lowbits(uint32_t pR0, uint32_t pR, uint32_t base)
+{
+    uint32_t b, pR0p;
+    num_masking_arithmetic_to_boolean_convert(pR0p, pR);
+    num_masking_boolean_lshift(pR0p, pR0p, 32 - base);
+    num_masking_boolean_rshift(b, pR0p, 31);
+    num_masking_boolean_neg(b, b);
+    num_masking_boolean_lshift(b, b, base);
+    num_masking_boolean_rshift(pR0p, pR0p, 32 - base);
+    num_masking_boolean_xor(pR0, pR0p, b);
+}
+
+// masking_arithmetic_makeint
+
+unsigned char num_masking_arithmetic_makeint(uint32_t z, uint32_t r, uint32_t base)
+{
+    uint32_t r_z, r_z_1, r_1, t, c;
+    num_masking_arithmetic_add(r_z, r, z);
+    num_masking_arithmetic_to_boolean_highbits(r_1, r, base);
+    num_masking_arithmetic_to_boolean_highbits(r_z_1, r_z, base);
+    num_masking_boolean_xor(t, r_1, r_z_1);
+    num_masking_boolean_lshift(t, t, 31);
+    c = num_masking_boolean_fullxor(t);
+    return (c >> 31);
+}
+
+unsigned char num_masking_arithmetic_usehint(unsigned char h, uint32_t r, uint32_t base)
+{
+    uint32_t m = (0xFFFFFFFFU) / base; // (q-1) / base
+    uint32_t r1, r0;
+    num_masking_arithmetic_to_boolean_decompose(r1, r0, r, base);
+
+    if (h == 1 && r0 > 0)
+    {
+        return (r1 + 1) % m;
+    }
+    else if (h == 1 && r0 < 0)
+    {
+        return (r1 - 1) % m;
+    }
+    else
+    {
+        return r1;
+    }
+}
+
+// num_masking_boolean_refresh
+void num_masking_boolean_refresh(uint32_t pC, uint32_t pA)
+{
+    pC = pA;
+    uint32_t r;
+    r = random_uint32_t();
+    pC ^=r;
+    
+}
+
+// num_masking_boolean_fullrefresh
+void num_masking_boolean_fullrefresh(uint32_t pC, uint32_t pA)
+{
+    pC = pA;
+    uint32_t r;
+    r = random_uint32_t();
+    pC ^=r;
+}
+
+// num_masking_boolean_fullxor
+uint32_t num_masking_boolean_fullxor(uint32_t pA)
+{
+    uint32_t r;
+    uint32_t x;
+    num_masking_boolean_fullrefresh(x,pA);
+    r = x;
+    r ^=x;
+    return r;
+
+}
+
+// num_masking_boolean_generate
+void num_masking_boolean_generate(uint32_t pC, uint32_t a)
+{
+    uint32_t r;
+    pC = a;
+    r = random_uint32_t();
+    pC ^= r;
+}
+
+// num_masking_boolean_xor
+void num_masking_boolean_xor(uint32_t pC, uint32_t pA, uint32_t pB)
+{
+    pC = pA ^ pB;
+}
+
+// num_masking_boolean_neg
+void num_masking_boolean_neg(uint32_t pC, uint32_t pA)
+{
+    pC = -pA;
+    
+}
+
+// num_masking_boolean_not
+void num_masking_boolean_not(uint32_t pC, uint32_t pA)
+{
+    pC = pA;
+}
+
+// num_masking_boolean_lshift
+void num_masking_boolean_lshift(uint32_t pC, uint32_t pA, uint32_t shift)
+{
+    pC = pA << shift;
+}
+
+// num_masking_boolean_rshift
+void num_masking_boolean_rshift(uint32_t pC, uint32_t pA, uint32_t shift)
+{
+    pC = pA >> shift;
+}
+
+// num_masking_boolean_and
+void num_masking_boolean_and(uint32_t pC, uint32_t pA, uint32_t pB)
+{
+    uint32_t r;
+    r = pA & pB;
+    uint32_t zij,zji,tmp;
+    zij = random_uint32_t();
+    zji  = pA&pB;
+    zji ^=  zij;
+    tmp = pA&pB;
+    zji  ^= tmp;
+    r ^= zij;
+    r ^= zji;
+    pC = r;
+}
+
+// num_masking_boolean_add
+void num_masking_boolean_add(uint32_t pC, uint32_t pA, uint32_t pB)
+{
+    uint32_t aux;
+    uint32_t aux0;
+    uint32_t p;
+    uint32_t g;
+    const uint32_t W = 5; /// log2 (w) = log2 (32)
+    num_masking_boolean_xor(p,pA,pB);
+    num_masking_boolean_and(g,pA,pB);
+
+    num_masking_boolean_lshift(aux, g,1<<(W-1));
+    num_masking_boolean_and   (aux, p,     aux);
+    num_masking_boolean_xor   (  g, g,     aux);
+    num_masking_boolean_lshift(aux, g,       1);
+    num_masking_boolean_xor   ( pC,pA,      pB);
+    num_masking_boolean_xor   ( pC,pC,     aux);
+    
+}
+
+// num_masking_boolean_unprotected_generate
+void num_masking_boolean_unprotected_generate(uint32_t pC, uint32_t a)
+{
+    pC = 0;
+}
+
+// num_masking_boolean_unprotected_recombine
+uint32_t num_masking_boolean_unprotected_recombine(uint32_t pA)
+{
+    uint32_t r = pA;
+    r ^= pA;
+    return r;
+}
+
+// num_masking_arithmetic_add
+void num_masking_arithmetic_add(uint32_t pC, uint32_t pA, uint32_t pB)
+{
+    pC = pA + pB;
+    
+}
+
+// num_masking_arithmetic_generate
+void num_masking_arithmetic_generate(uint32_t pC, uint32_t a)
+{
+    uint32_t r = random_uint32_t();
+    pC = a;
+    pC -= r;
+    
+}
+
+// num_masking_arithmetic_unprotected_recombine
+uint32_t num_masking_arithmetic_unprotected_recombine(uint32_t pR)
+{
+    uint32_t r = pR;
+    r += pR;
+    return r;
+    
+}
+
+// num_masking_arithmetic_to_boolean_convert
+void num_masking_arithmetic_to_boolean_convert(uint32_t pC, uint32_t pA)
+{
+    uint32_t b;
+    num_masking_boolean_generate(pC,pA);
+    num_masking_boolean_generate( b,pA);
+    num_masking_boolean_add     (pC,pC,b );
+    
+}
+
+// num_masking_boolean_to_arithmetic_convert
+void num_masking_boolean_to_arithmetic_convert(uint32_t pC, uint32_t pA)
+{
+    uint32_t a;
+    uint32_t y;
+    uint32_t z;
+    pC = random_uint32_t();
+    a = -pC;
+    a = 0;
+    num_masking_arithmetic_to_boolean_convert(y,a);
+    num_masking_boolean_add(z,pA,y);
+    pC = num_masking_boolean_fullxor(z);
+    
 }

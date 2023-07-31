@@ -3,6 +3,7 @@
 
 #include "config.h"
 
+
 #define SEEDBYTES 32
 #define CRHBYTES 64
 #define N 256
@@ -61,5 +62,13 @@
                                + K*POLYETA_PACKEDBYTES \
                                + K*POLYT0_PACKEDBYTES)
 #define CRYPTO_BYTES (SEEDBYTES + L*POLYZ_PACKEDBYTES + POLYVECH_PACKEDBYTES)
+
+typedef struct{
+    uint8_t a[SEEDBYTES];
+    uint8_t b[SEEDBYTES];
+    uint8_t c[K*POLYW1_PACKEDBYTES];
+    uint8_t d[K*POLYW1_PACKEDBYTES];
+}cst_8t;
+
 
 #endif
