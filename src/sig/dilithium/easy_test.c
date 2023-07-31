@@ -85,7 +85,8 @@ static OQS_STATUS sig_test_correctness(const char *method_name) {
     }
     
     printf("\n");
-    
+
+    //sigは署名技術のステータスを示すものでsignatureに値が入っているのでそちらを入れるべきでは?//
     rc = mask_crypto_sign_verify((uint8_t *)sig, *sig_len, message, message_len, public_key);
     printf("siglen is %d\n",rc);
     if (rc != OQS_SUCCESS) {
