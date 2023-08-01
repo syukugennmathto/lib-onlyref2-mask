@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include "params.h"
+#include "pqcrystals-dilithium_dilithium2_ref/params.h"
 #include "polyvec.h"
 #include "poly.h"
 

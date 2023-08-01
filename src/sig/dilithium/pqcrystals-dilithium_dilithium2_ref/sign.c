@@ -408,12 +408,18 @@ cst_8t mask_crypto_sign_verify(const uint8_t *sig,
   polyveck_caddq(&w1);
     for (size_t i = 0; i < L; i++) {
         for (size_t j = 0; j < N; j++) {
-            h.vec[i].coeffs[j] = num_masking_arithmetic_makeint(w0.vec[i].coeffs[j],w1.vec[i].coeffs[j], alpha);
+            h.vec[i].coeffs[j] = num_masking_arithmetic_makeint(w1.vec[i].coeffs[j],w1.vec[i].coeffs[j], alpha);
         }
     }
     
-  polyveck_use_hint(&w1, &w1, &h);
-  polyveck_pack_w1(buf, &w1);
+    for (size_t i = 0; i < L; i++) {
+        for (size_t j = 0; j < N; j++) {
+    num_masking_arithmetic_usehint(h.vec[i].coeffs[j],w1.vec[i].coeffs[j],alpha);
+        }
+    }
+    
+  //polyveck_use_hint(&w1, &w1, &h);
+   polyveck_pack_w1(buf, &w1);
 
     /* Call random oracle and verify challenge line28 */
     shake256_inc_init(&state);
@@ -436,7 +442,18 @@ cst_8t mask_crypto_sign_verify(const uint8_t *sig,
     
     for(i = 0; i < SEEDBYTES; ++i) {if(c[i] != c2[i]) {return result;}}
 
-  return result;
+  /*for(i = 0; i < SEEDBYTES; ++i){
+      
+      result.b[i] = 0;
+  }
+
+  for(i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
+      result.c[i] = 0;
+      result.d[i] = 0;
+  }*/
+    for(i = 0; i < SEEDBYTES; ++i){if(c[i] == c2[i]) {result.a[0] = 0;result.b[0] = 0;}}
+    
+    return result;
 }
 
 /*************************************************

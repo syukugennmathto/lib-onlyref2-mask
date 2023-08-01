@@ -112,6 +112,9 @@ void num_masking_arithmetic_to_boolean_lowbits(uint32_t pR0, uint32_t pR, uint32
 #define num_masking_arithmetic_makeint DILITHIUM_NAMESPACE(num_masking_arithmetic_makeint)
 unsigned char num_masking_arithmetic_makeint(uint32_t z, uint32_t r, uint32_t base);
 
+#define num_masking_arithmetic_usehint DILITHIUM_NAMESPACE(num_masking_arithmetic_usehint)
+unsigned char num_masking_arithmetic_usehint(unsigned char h, uint32_t r, uint32_t base);
+
 #define num_masking_boolean_refresh DILITHIUM_NAMESPACE(num_masking_boolean_refresh)
 void num_masking_boolean_refresh(uint32_t pC, uint32_t pA);
 

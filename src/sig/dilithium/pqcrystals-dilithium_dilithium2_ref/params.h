@@ -68,7 +68,7 @@ typedef struct{
     uint8_t b[SEEDBYTES];
     uint8_t c[K*POLYW1_PACKEDBYTES];
     uint8_t d[K*POLYW1_PACKEDBYTES];
-}cst_8t;
+} cst_8t;
 
 
 #endif
