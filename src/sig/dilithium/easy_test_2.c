@@ -74,7 +74,7 @@ static OQS_STATUS sig_test_correctness(const char *method_name) {
     
 
 
-    rc = mask_crypto_sign(signature, &signature_len, message, message_len, secret_key);
+    rc = mask_crypto_sign(signature, &signature_len, message, message_len, secret_key,public_key);
     printf("test num  is %u\n",rc);
     if (rc != OQS_SUCCESS) {
         fprintf(stderr, "ERROR: OQS_SIG_sign failed\n");
@@ -92,17 +92,44 @@ static OQS_STATUS sig_test_correctness(const char *method_name) {
     result = mask_crypto_sign_verify((uint8_t *)sig, *sig_len, message, message_len, public_key);
     
     for(int i = 0; i < SEEDBYTES; ++i){
-        printf("c[%d] is   %d\n",i, result.a[i]);
-        printf("c2[%d] is  %d\n",i, result.b[i]);
+        printf("c[%d]  is   %d /",i, result.a[i]);
+
+        if(i%6 == 0) printf("\n");
+    }
+    printf("\n");
+    for(int i = 0; i < SEEDBYTES; ++i){
+
+        printf("c2[%d] is   %d /",i, result.b[i]);
+        if(i%6 == 0) printf("\n");
+    }
+    printf("\n");
+    printf("misstake is ");
+    for(int i = 0; i < SEEDBYTES; ++i) {if(result.a[i] != result.b[i]) {printf("%d/",i);}}
+    printf("\n");
+
+    printf("\n");
+    for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
+        printf("sig[%d] is %d /",i, result.c[i]);
+
+        if(i%6 == 0) printf("\n");
+
     }
     printf("\n");
     for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
-        printf("sig[%d] is %d\n",i, result.c[i]);
-        printf("bif[%d] is %d\n",i, result.d[i]);
+
+        printf("buf[%d] is %d /",i, result.d[i]);
+        if(i%6 == 0) printf("\n");
+
     }
     printf("\n");
+    printf("misstake is ");
+    for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i) {if(result.c[i] != result.d[i]) {printf("%d/",i);}}
+    printf("\n");
     
-    if(result.a[0] == result.b[0]) {rc = 0;}
+    if(result.a[0] == result.b[0]) {
+        rc = 0;
+    }
+    else rc = -1;
     
     
     
