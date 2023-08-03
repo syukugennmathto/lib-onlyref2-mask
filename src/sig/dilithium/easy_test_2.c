@@ -22,7 +22,14 @@ static OQS_STATUS sig_test_correctness(const char *method_name) {
     size_t signature_len;
 
     cst_8t result;
-    
+    for(int i = 0; i < SEEDBYTES; ++i){
+        result.a[i] = 0;
+        result.b[i] = 0;
+    }
+    for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
+        result.c[i] = 0;
+        result.d[i] = 0;
+    }
     
     // マジックナンバーを初期化
     magic_t magic;
@@ -88,51 +95,11 @@ static OQS_STATUS sig_test_correctness(const char *method_name) {
     
     printf("\n");
 
+    
     //sigは署名技術のステータスを示すものでsignatureに値が入っているのでそちらを入れるべきでは?//
-    result = mask_crypto_sign_verify((uint8_t *)sig, *sig_len, message, message_len, public_key);
-    
-    for(int i = 0; i < SEEDBYTES; ++i){
-        printf("c[%d]  is   %d /",i, result.a[i]);
-
-        if(i%6 == 0) printf("\n");
-    }
-    printf("\n");
-    for(int i = 0; i < SEEDBYTES; ++i){
-
-        printf("c2[%d] is   %d /",i, result.b[i]);
-        if(i%6 == 0) printf("\n");
-    }
-    printf("\n");
-    printf("misstake is ");
-    for(int i = 0; i < SEEDBYTES; ++i) {if(result.a[i] != result.b[i]) {printf("%d/",i);}}
-    printf("\n");
-
-    printf("\n");
-    for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
-        printf("sig[%d] is %d /",i, result.c[i]);
-
-        if(i%6 == 0) printf("\n");
-
-    }
-    printf("\n");
-    for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i){
-
-        printf("buf[%d] is %d /",i, result.d[i]);
-        if(i%6 == 0) printf("\n");
-
-    }
-    printf("\n");
-    printf("misstake is ");
-    for(int i = 0; i < K*POLYW1_PACKEDBYTES; ++i) {if(result.c[i] != result.d[i]) {printf("%d/",i);}}
-    printf("\n");
-    
-    if(result.a[0] == result.b[0]) {
-        rc = 0;
-    }
-    else rc = -1;
-    
-    
-    
+    rc = mask_crypto_sign_verify((uint8_t *)sig, *sig_len, message, message_len, public_key);
+  
+    printf("test num  is %u\n",rc);
     if (rc != OQS_SUCCESS) {
         fprintf(stderr, "ERROR: OQS_SIG_verify failed\n");
 
@@ -152,6 +119,7 @@ cleanup:
     free(signature);
     OQS_SIG_free(sig);
     return ret;
+    rc =0;
 }
 
 int main(int argc, char **argv) {
