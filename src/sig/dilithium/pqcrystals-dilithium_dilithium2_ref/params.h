@@ -8,7 +8,7 @@
 #define CRHBYTES 64
 #define N 256
 #define Q 8380417
-#define D 13 //D=13
+#define D 14 //D=13
 #define ROOT_OF_UNITY 1753
 #define dilithium_n N
 #define dilithium_gamma 19
@@ -16,7 +16,7 @@
 #define dilithium_nu 5
 #define low_noise_bound dilithium_nu
 #define shares 6
-#define MAX_SIGN 30
+#define MAX_SIGN 1000
 #define alpha 523776
 
 
