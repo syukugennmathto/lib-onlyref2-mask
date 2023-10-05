@@ -1,4 +1,5 @@
 #include <stddef.h>
+#include <stddef.h>
 #include <stdint.h>
 #include "../../common/pqclean_shims/fips202.h"
 #include <oqs/oqs.h>
@@ -316,18 +317,17 @@ static unsigned int rej_uniform(int32_t *a,
                                 unsigned int buflen)
 {
   unsigned int ctr, pos;
-  uint32_t t;
+  int32_t t;
   DBENCH_START();
 
   ctr = pos = 0;
   while(ctr < len && pos + 3 <= buflen) {
     t  = buf[pos++];
-    t |= (uint32_t)buf[pos++] << 8;
-    t |= (uint32_t)buf[pos++] << 16;
-    t &= 0x7FFFFF;
+    t |= (uint8_t)buf[pos++] << 8;  //32/4 = 8
+    t |= (uint8_t)buf[pos++] << 16;  // 32/2=16
+    t &= 0x7FFFFF; //0x7FFFFF
 
-    if(t < Q)
-      a[ctr++] = t;
+    if(t < Q) a[ctr++] = t;
   }
 
   DBENCH_STOP(*tsample);
@@ -389,7 +389,7 @@ void poly_uniform(poly *a,
 * Returns number of sampled coefficients. Can be smaller than len if not enough
 * random bytes were given.
 **************************************************/
-static unsigned int rej_eta(int32_t *a, size_t len, const uint8_t *buf, size_t buflen)
+static unsigned int rej_eta(int32_t *a, size_t len, const unsigned char *buf, size_t buflen)
 {
     unsigned int ctr, pos;
     
@@ -922,4 +922,30 @@ void polyw1_pack(uint8_t *r, const poly *a) {
 #endif
 
   DBENCH_STOP(*tpack);
+}
+
+/*************************************************
+* Name:        poly_masking_make_hint
+*
+* Description: Compute hint polynomial. The coefficients of which indicate
+*              whether the low bits of the corresponding coefficient of
+*              the input polynomial overflow into the high bits.
+*
+* Arguments:   - poly *h: pointer to output hint polynomial
+*              - const poly *a0: pointer to low part of input polynomial
+*              - const poly *a1: pointer to high part of input polynomial
+*
+* Returns number of 1 bits.
+**************************************************/
+unsigned int poly_masking_make_hint(poly *h, const poly *a0, const poly *a1) {
+  unsigned int i, s = 0;
+  DBENCH_START();
+
+  for(i = 0; i < N; ++i) {
+    h->coeffs[i] = make_hint(a0->coeffs[i], a1->coeffs[i]);
+    s += h->coeffs[i];
+  }
+
+  DBENCH_STOP(*tround);
+  return s;
 }

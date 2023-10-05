@@ -3,19 +3,21 @@
 
 #include "config.h"
 
+
 #define SEEDBYTES 32
 #define CRHBYTES 64
 #define N 256
 #define Q 8380417
-#define D 13
+#define D 14 //D=13
 #define ROOT_OF_UNITY 1753
 #define dilithium_n N
 #define dilithium_gamma 19
-#define large_noise_bound (1 << dilithium_gamma) - 1
+#define large_noise_bound alpha
 #define dilithium_nu 5
 #define low_noise_bound dilithium_nu
-
-
+#define shares 6
+#define MAX_SIGN 1000
+#define alpha 523776
 
 
 
@@ -30,29 +32,6 @@
 #define OMEGA 80
 #define dilithium_k K
 #define dilithium_l L
-
-
-
-#elif DILITHIUM_MODE == 3
-#define K 6
-#define L 5
-#define ETA 4
-#define TAU 49
-#define BETA 196
-#define GAMMA1 (1 << 19)
-#define GAMMA2 ((Q-1)/32)
-#define OMEGA 55
-
-#elif DILITHIUM_MODE == 5
-#define K 8
-#define L 7
-#define ETA 2
-#define TAU 60
-#define BETA 120
-#define GAMMA1 (1 << 19)
-#define GAMMA2 ((Q-1)/32)
-#define OMEGA 75
-
 #endif
 
 #define POLYT1_PACKEDBYTES  320
@@ -83,5 +62,13 @@
                                + K*POLYETA_PACKEDBYTES \
                                + K*POLYT0_PACKEDBYTES)
 #define CRYPTO_BYTES (SEEDBYTES + L*POLYZ_PACKEDBYTES + POLYVECH_PACKEDBYTES)
+
+typedef struct{
+    uint8_t a[SEEDBYTES];
+    uint8_t b[SEEDBYTES];
+    uint8_t c[K*POLYW1_PACKEDBYTES];
+    uint8_t d[K*POLYW1_PACKEDBYTES];
+} cst_8t;
+
 
 #endif

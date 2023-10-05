@@ -388,3 +388,27 @@ void polyveck_pack_w1(uint8_t r[K*POLYW1_PACKEDBYTES], const polyveck *w1) {
   for(i = 0; i < K; ++i)
     polyw1_pack(&r[i*POLYW1_PACKEDBYTES], &w1->vec[i]);
 }
+
+
+/*************************************************
+* Name:        polyveck_masking_make_hint
+*
+* Description: Compute hint vector.
+*
+* Arguments:   - polyveck *h: pointer to output vector
+*              - const polyveck *v0: pointer to low part of input vector
+*              - const polyveck *v1: pointer to high part of input vector
+*
+* Returns number of 1 bits.
+**************************************************/
+unsigned int polyveck_masking_make_hint(polyveck *h,
+                                const polyveck *v0,
+                                const polyveck *v1)
+{
+  unsigned int i, s = 0;
+
+  for(i = 0; i < K; ++i)
+    s += poly_masking_make_hint(&h->vec[i], &v0->vec[i], &v1->vec[i]);
+
+  return s;
+}
