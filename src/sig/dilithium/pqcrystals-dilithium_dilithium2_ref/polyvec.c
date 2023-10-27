@@ -2,6 +2,8 @@
 #include "params.h"
 #include "polyvec.h"
 #include "poly.h"
+#include "rounding.h"
+#include "noise.h"
 
 /*************************************************
 * Name:        expand_mat
@@ -29,6 +31,7 @@ void polyvec_matrix_pointwise_montgomery(polyveck *t, const polyvecl mat[K], con
     polyvecl_pointwise_acc_montgomery(&t->vec[i], &mat[i], v);
 }
 
+
 /**************************************************************/
 /************ Vectors of polynomials of length L **************/
 /**************************************************************/
@@ -39,12 +42,26 @@ void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t no
   for(i = 0; i < L; ++i)
     poly_uniform_eta(&v->vec[i], seed, nonce++);
 }
+void polyvecl_small_bounded_noise_generation_256(polyvecl *v, const uint8_t *seed, uint16_t nonce) {
+  unsigned int i;
+    
+  //  printf("gene1.1\n");
+  for(i = 0; i < L; ++i)
+      poly_small_bounded_noise_generation_256(&v->vec[i], &seed[i], nonce++);
+}
 
 void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce) {
   unsigned int i;
 
   for(i = 0; i < L; ++i)
     poly_uniform_gamma1(&v->vec[i], seed, L*nonce + i);
+}
+
+void polycecl_large_bounded_noise_generation(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce){
+    unsigned int i;
+    
+    for(i = 0; i < L; ++i)
+        large_bounded_noise_generation(&v->vec[i], seed, L*nonce + i);
 }
 
 void polyvecl_reduce(polyvecl *v) {
@@ -158,6 +175,82 @@ void polyveck_uniform_eta(polyveck *v, const uint8_t seed[CRHBYTES], uint16_t no
     poly_uniform_eta(&v->vec[i], seed, nonce++);
 }
 
+void polyveck_small_bounded_noise_generation_256(polyveck *v, const uint8_t *seed, uint16_t nonce) {
+  unsigned int i;
+  for(i = 0; i < K; ++i)
+      poly_small_bounded_noise_generation_256(&v->vec[i], &seed[i], nonce++);
+}
+
+/*************************************************
+* Name:        polyveck_masking_highbits
+*
+* Description: masking highbits of polyveck
+*
+* Arguments:   - polyveck *v: pointer to input/output vector
+**************************************************/
+void polyveck_masking_arithmetic_to_boolean_highbits(polyveck *v1,const polyveck *v,maskpointveck* pD){
+    unsigned int i;
+    
+    for(i = 0;i<K;++i)poly_masking_arithmetic_to_boolean_highbits(&v1->vec[i],&v->vec[i],&pD->vec[i]);
+    
+}
+/*************************************************
+* Name:        polyveck_nosking_highbits
+*
+* Description: no masking highbits of polyveck
+*
+* Arguments:   - polyveck *v: pointer to input/output vector
+**************************************************/
+void polyveck_nosking_arithmetic_to_boolean_highbits(polyveck *v1,const polyveck *v,maskpointveck* pD){
+    unsigned int i;
+    
+    for(i = 0;i<K;++i)poly_nosking_arithmetic_to_boolean_highbits(&v1->vec[i],&v->vec[i],&pD->vec[i]);
+}
+
+/*************************************************
+* Name:        polyveck_masking_lowbits
+*
+* Description: masking lowbits of polyveck
+*
+* Arguments:   - polyveck *v: pointer to input/output vector
+**************************************************/
+void polyveck_masking_arithmetic_to_boolean_lowbits(polyveck *v0, const polyveck *v,maskpointveck* pD){
+    unsigned int i;
+    
+    for(i = 0;i<K;++i)poly_masking_arithmetic_to_boolean_lowbits(&v0->vec[i],&v->vec[i],&pD->vec[i]);
+}
+
+/*************************************************
+* Name:        polyveck_masking_decompose
+*
+* Description: masking decompose of polyveck
+*
+* Arguments:   - polyveck *v: pointer to input/output vector
+**************************************************/
+void polyveck_masking_decompose(polyveck *v0, polyveck *v1,const polyveck *v,maskpointveck* pD){
+    
+    uint32_t i,j;
+    polyveck w;
+  //  printf("there1\n");
+    for (i = 0; i < K; ++i) {
+        for (j = 0; j < N; ++j) {
+            w.vec[i].coeffs[j]=v->vec[i].coeffs[j];
+        }
+    }
+
+  //  printf("there1\n");
+    
+    for(i = 0;i<K;++i){
+
+        poly_masking_arithmetic_to_boolean_highbits(&v1->vec[i],&v->vec[i],&pD->vec[i]);
+      //  printf("there1[%d]\n",i);
+    }
+   // printf("there2\n");
+    for(i = 0;i<K;++i)poly_masking_arithmetic_to_boolean_lowbits(&v0->vec[i],&w.vec[i],&pD->vec[i]);
+   // printf("there3\n");
+}
+
+
 /*************************************************
 * Name:        polyveck_reduce
 *
@@ -218,7 +311,7 @@ void polyveck_add(polyveck *w, const polyveck *u, const polyveck *v) {
 **************************************************/
 void polyveck_sub(polyveck *w, const polyveck *u, const polyveck *v) {
   unsigned int i;
-
+  //  printf("this is 3w0-vec\n");
   for(i = 0; i < K; ++i)
     poly_sub(&w->vec[i], &u->vec[i], &v->vec[i]);
 }
@@ -271,7 +364,7 @@ void polyveck_invntt_tomont(polyveck *v) {
 
 void polyveck_pointwise_poly_montgomery(polyveck *r, const poly *a, const polyveck *v) {
   unsigned int i;
-
+    printf("this is 1w0-poi1\n");
   for(i = 0; i < K; ++i)
     poly_pointwise_montgomery(&r->vec[i], a, &v->vec[i]);
 }
@@ -341,7 +434,6 @@ void polyveck_decompose(polyveck *v1, polyveck *v0, const polyveck *v) {
   for(i = 0; i < K; ++i)
     poly_decompose(&v1->vec[i], &v0->vec[i], &v->vec[i]);
 }
-
 /*************************************************
 * Name:        polyveck_make_hint
 *
@@ -387,4 +479,50 @@ void polyveck_pack_w1(uint8_t r[K*POLYW1_PACKEDBYTES], const polyveck *w1) {
 
   for(i = 0; i < K; ++i)
     polyw1_pack(&r[i*POLYW1_PACKEDBYTES], &w1->vec[i]);
+}
+
+
+
+
+/*************************************************
+* Name:        polyveck_masking_make_hint
+*
+* Description: Compute hint vector.
+*
+* Arguments:   - polyveck *h: pointer to output vector
+*              - const polyveck *v0: pointer to low part of input vector
+*              - const polyveck *v1: pointer to high part of input vector
+*
+* Returns number of 1 bits.
+**************************************************/
+void polyveck_masking_make_hint(polyveck *h,
+                                const polyveck *v0,
+                                const polyveck *v1,
+                                maskpointveck* pd
+                                        )
+{
+  unsigned int i;
+
+  for(i = 0; i < K; ++i)
+      poly_masking_arithmetic_to_boolean_makehint(&h->vec[i], &v0->vec[i], &v1->vec[i],pd->vec[i]);
+    
+}
+
+/*************************************************
+* Name:        polyveck_use_hint
+*
+* Description: Use hint vector to correct the high bits of input vector.
+*
+* Arguments:   - polyveck *w: pointer to output vector of polynomials with
+*                             corrected high bits
+*              - const polyveck *u: pointer to input vector
+*              - const polyveck *h: pointer to input hint vector
+**************************************************/
+void polyveck_masking_use_hint(polyveck *w,
+                               const polyveck *h,
+                               maskpointveck* pd
+                               ) {
+  unsigned int i;
+    
+    for(i = 0; i < K; ++i)poly_masking_use_hint(&w->vec[i],&h->vec[i],pd->vec[i]);
 }
