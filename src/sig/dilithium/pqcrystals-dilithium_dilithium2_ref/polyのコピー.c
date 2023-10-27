@@ -10,7 +10,6 @@
 #include "reduce.h"
 #include "rounding.h"
 #include "symmetric.h"
-#include "noise.h"
 
 #ifdef DBENCH
 #include "test/cpucycles.h"
@@ -92,7 +91,7 @@ void poly_add(poly *c, const poly *a, const poly *b)  {
 void poly_sub(poly *c, const poly *a, const poly *b) {
   unsigned int i;
   DBENCH_START();
-    //printf("this is 3w0-vec-poly\n");
+
   for(i = 0; i < N; ++i)
     c->coeffs[i] = a->coeffs[i] - b->coeffs[i];
 
@@ -144,7 +143,7 @@ void poly_ntt(poly *a) {
 **************************************************/
 void poly_invntt_tomont(poly *a) {
   DBENCH_START();
-    printf("this is 2w0-inv\n");
+
   invntt_tomont(a->coeffs);
 
   DBENCH_STOP(*tmul);
@@ -164,7 +163,7 @@ void poly_invntt_tomont(poly *a) {
 void poly_pointwise_montgomery(poly *c, const poly *a, const poly *b) {
   unsigned int i;
   DBENCH_START();
-    //printf("this is 1w0-poi1-pol\n");
+
   for(i = 0; i < N; ++i)
     c->coeffs[i] = montgomery_reduce((int64_t)a->coeffs[i] * b->coeffs[i]);
 
@@ -375,16 +374,6 @@ void poly_uniform(poly *a,
   OQS_SHA3_shake128_inc_ctx_release(&state); // stream128_releaseをOQS_SHA3_shake128_inc_ctx_releaseに変更
 }
 
-void poly_small_bounded_noise_generation_256(poly *v,const uint8_t *seed,uint16_t nonce) {
-    unsigned int i= 0;
-    uint8_t seeded[N];
-
-    for(i = 0;i<N;++i){
-        small_bounded_noise_generation_256(&v->coeffs[i],seeded, nonce++);
-    }
-    
-}
-
 
 /*************************************************
 * Name:        rej_eta
@@ -475,7 +464,7 @@ void poly_uniform_eta(poly *a,
 }
 
 /*************************************************
-* Name:        poly_uniform_gamma1
+* Name:        poly_uniform_gamma1m1
 *
 * Description: Sample polynomial with uniformly random coefficients
 *              in [-(GAMMA1 - 1), GAMMA1] by unpacking output stream
@@ -987,14 +976,14 @@ void poly_masking_use_hint(poly* w,const poly* h,mask_point pd){
 void poly_masking_arithmetic_to_boolean_highbits(poly *v1, const poly *v,mask_point *pD) {
     uint32_t i, s = 0;
     
-  //  printf("dep1\n");
+    printf("dep1\n");
     for(i = 0;i<N;++i){
 
         new_masking_arithmetic_to_boolean_highbits(&v1->coeffs[i],&v->coeffs[i],pD);
-  //      printf("dep1[%d]\n",i);
+        printf("dep1[%d]\n",i);
     }
-  //  printf("dep2\n");
-  
+    printf("dep2\n");
+    
 }
 
 /*************************************************

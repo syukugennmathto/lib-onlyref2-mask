@@ -3,7 +3,7 @@
 #include "polyvec.h"
 #include "poly.h"
 #include <stddef.h>
-
+#include <stdio.h>
 
 /*************************************************
 * Name:        pack_pk
@@ -15,17 +15,18 @@
 *              - const polyveck *t1: pointer to vector t1
 **************************************************/
 void pack_pk(uint8_t pk[CRYPTO_PUBLICKEYBYTES],
-             const uint8_t rho[SEEDBYTES],
+             uint8_t rho[CRYPTO_PUBLICKEYBYTES],
              const polyveck *t1)
 {
   unsigned int i;
-
-  for(i = 0; i < SEEDBYTES; ++i)
-    pk[i] = rho[i];
+    printf("gene6.1\n");
+  for(i = 0; i < SEEDBYTES; ++i)pk[i]= rho[i];
+    printf("gene6.2\n");
   pk += SEEDBYTES;
-
+    printf("gene6.3\n");
   for(i = 0; i < K; ++i)
     polyt1_pack(pk + i*POLYT1_PACKEDBYTES, &t1->vec[i]);
+    printf("gene6.4\n");
 }
 
 /*************************************************
@@ -185,6 +186,60 @@ void pack_sig(uint8_t sig[CRYPTO_BYTES],
 }
 
 /*************************************************
+* Name:        pack_sig
+*
+* Description: Bit-pack signature sig = (c, z, h).
+*
+* Arguments:   - uint8_t sig[]: output byte array
+*              - const uint8_t *c: pointer to challenge hash length SEEDBYTES
+*              - const polyvecl *z: pointer to vector z
+*              - const polyveck *h: pointer to hint vector h
+**************************************************/
+void packing_sig(uint8_t sig[masking_CRYPTO_BYTES],
+              const uint8_t c[SEEDBYTES],
+              const polyvecl *z,
+              const polyveck *h,
+              const maskpointveck *pd
+                 )
+{
+  unsigned int i, j, k;
+
+  for(i=0; i < SEEDBYTES; ++i)
+    sig[i] = c[i];
+  sig += SEEDBYTES;
+
+  for(i = 0; i < L; ++i)
+    polyz_pack(sig + i*POLYZ_PACKEDBYTES, &z->vec[i]);
+  sig += L*POLYZ_PACKEDBYTES;
+
+  /* Encode h */
+  for(i = 0; i < OMEGA + K; ++i)
+    sig[i] = 0;
+
+  k = 0;
+  for(i = 0; i < K; ++i) {
+    for(j = 0; j < N; ++j)
+      if(h->vec[i].coeffs[j] != 0)
+        sig[k++] = j;
+
+    sig[OMEGA + i] = k;
+  }
+    sig += CRYPTO_BYTES;
+    
+    for(i = 0; i < K; ++i){
+        for(j = 0; j < N; ++j)
+            sig[j] = pd->vec[i].outside[j];
+            sig += N;
+        }
+    for(i = 0; i < K; ++i){
+        for(j = 0; j < N; ++j){
+            for(k = 0; k < N; ++k)
+                sig[j] = pd->vec[i].inside[j][k];
+                sig += N;
+            }
+        }
+}
+/*************************************************
 * Name:        unpack_sig
 *
 * Description: Unpack signature sig = (c, z, h).
@@ -235,5 +290,76 @@ int unpack_sig(uint8_t c[SEEDBYTES],
     if(sig[j])
       return 1;
 
+  return 0;
+}
+
+/*************************************************
+* Name:        unpack_sig
+*
+* Description: Unpack signature sig = (c, z, h).
+*
+* Arguments:   - uint8_t *c: pointer to output challenge hash
+*              - polyvecl *z: pointer to output vector z
+*              - polyveck *h: pointer to output hint vector h
+*              - const uint8_t sig[]: byte array containing
+*                bit-packed signature
+*
+* Returns 1 in case of malformed signature; otherwise 0.
+**************************************************/
+int unpacking_sig(
+               uint8_t c[SEEDBYTES],
+               polyvecl *z,
+               polyveck *h,
+               maskpointveck *pd,
+               const uint8_t sig[masking_CRYPTO_BYTES])
+{
+  unsigned int i, j, k;
+
+  for(i = 0; i < SEEDBYTES; ++i)
+    c[i] = sig[i];
+  sig += SEEDBYTES;
+
+  for(i = 0; i < L; ++i)
+    polyz_unpack(&z->vec[i], sig + i*POLYZ_PACKEDBYTES);
+  sig += L*POLYZ_PACKEDBYTES;
+
+  /* Decode h */
+  k = 0;
+  for(i = 0; i < K; ++i) {
+    for(j = 0; j < N; ++j)
+      h->vec[i].coeffs[j] = 0;
+
+    if(sig[OMEGA + i] < k || sig[OMEGA + i] > OMEGA)
+      return 1;
+
+    for(j = k; j < sig[OMEGA + i]; ++j) {
+      /* Coefficients are ordered for strong unforgeability */
+      if(j > k && sig[j] <= sig[j-1]) return 1;
+      h->vec[i].coeffs[sig[j]] = 1;
+    }
+
+    k = sig[OMEGA + i];
+  }
+
+  /* Extra indices are zero for strong unforgeability */
+  for(j = k; j < OMEGA; ++j)
+    if(sig[j])
+      return 1;
+
+    sig += CRYPTO_BYTES;
+    
+    for(i = 0; i < K; ++i){
+        for(j = 0; j < N; ++j)
+             pd->vec[i].outside[j]=sig[j];
+            sig += N;
+        }
+    for(i = 0; i < K; ++i){
+        for(j = 0; j < N; ++j){
+            for(k = 0; k < N; ++k)
+                pd->vec[i].inside[j][k]=sig[j];
+                sig += N;
+            }
+        }
+    
   return 0;
 }
