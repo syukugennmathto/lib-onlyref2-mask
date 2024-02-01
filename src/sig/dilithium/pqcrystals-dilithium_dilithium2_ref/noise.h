@@ -24,13 +24,15 @@
 
 void sam(uint32_t* out_buffer, unsigned char *seed);
 
-void small_bounded_noise_generation_256(uint32_t *out_buffer, uint8_t* seed, unsigned char nonce);
+void small_bounded_noise_generation_256(int32_t *out_buffer, const uint8_t *seed,uint16_t nonce);
+
+uint32_t small_noise_rejection_256(uint32_t* out_buffer, size_t out_len, uint8_t* buffer, size_t in_len);
 
 void small_bounded_noise_generation(uint32_t* out_buffer, unsigned char* seed, unsigned char nonce);
 
-void large_bounded_noise_generation(poly *r, const uint8_t *seed, unsigned char nonce);
+void large_bounded_noise_generation(poly *r, const uint8_t *seed,uint16_t nonce);
 
-uint32_t large_noise_rejection_256(uint32_t *out_buffer, size_t out_len, unsigned char *buffer, size_t in_len);
+uint32_t large_noise_rejection_256(uint32_t *out_buffer, size_t out_len,unsigned char *buffer, size_t in_len);
 
 void shake128_absorb(uint64_t *s,const unsigned char *input,unsigned long long inlen);
 
@@ -46,6 +48,7 @@ void shake128_noise(unsigned char *output,unsigned long long outlen,const unsign
 void shake256_noise(unsigned char *output,unsigned long long outlen,const unsigned char *input,unsigned long long inlen);
 
 static unsigned int rej_eta(int32_t *a, size_t len, const uint8_t *buf, size_t buflen);
+
 
 #define shake128_inc_init OQS_SHA3_shake128_inc_init
 #define shake128_inc_absorb OQS_SHA3_shake128_inc_absorb

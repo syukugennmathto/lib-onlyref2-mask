@@ -1,3 +1,4 @@
+
 #ifndef POLYVEC_H
 #define POLYVEC_H
 
@@ -12,6 +13,10 @@ typedef struct {
 
 #define polyvecl_uniform_eta DILITHIUM_NAMESPACE(polyvecl_uniform_eta)
 void polyvecl_uniform_eta(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
+
+
+#define polyvecl_small_bounded_noise_generation_256 DILITHIUM_NAMESPACE(polyvecl_small_bounded_noise_generation_256)
+void polyvecl_small_bounded_noise_generation_256(polyvecl *v, const uint8_t *seed, uint16_t nonce);
 
 #define polyvecl_uniform_gamma1 DILITHIUM_NAMESPACE(polyvecl_uniform_gamma1)
 void polyvecl_uniform_gamma1(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
@@ -48,10 +53,25 @@ typedef struct {
 #define polyveck_uniform_eta DILITHIUM_NAMESPACE(polyveck_uniform_eta)
 void polyveck_uniform_eta(polyveck *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
 
+#define polycecl_large_bounded_noise_generation DILITHIUM_NAMESPACE(polycecl_large_bounded_noise_generation)
+void polycecl_large_bounded_noise_generation(polyvecl *v, const uint8_t seed[CRHBYTES], uint16_t nonce);
+
+#define polyveck_small_bounded_noise_generation_256 DILITHIUM_NAMESPACE(polyveck_small_bounded_noise_generation_256)
+void polyveck_small_bounded_noise_generation_256(polyveck *v, const uint8_t *seed, uint16_t nonce);
+
 #define polyveck_reduce DILITHIUM_NAMESPACE(polyveck_reduce)
 void polyveck_reduce(polyveck *v);
 #define polyveck_caddq DILITHIUM_NAMESPACE(polyveck_caddq)
 void polyveck_caddq(polyveck *v);
+
+#define polyveck_masking_arithmetic_to_boolean_highbits DILITHIUM_NAMESPACE(polyveck_masking_arithmetic_to_boolean_highbits)
+void polyveck_masking_arithmetic_to_boolean_highbits(polyveck *v1,const polyveck *v,maskpointveck* pD);
+#define polyveck_unmasking_arithmetic_to_boolean_highbits DILITHIUM_NAMESPACE(polyveck_nosking_arithmetic_to_boolean_highbits)
+void polyveck_unmasking_arithmetic_to_boolean_highbits(polyveck *v1,const polyveck *v,maskpointveck* pD);
+#define polyveck_masking_arithmetic_to_boolean_lowbits DILITHIUM_NAMESPACE(polyveck_masking_arithmetic_to_boolean_lowbits)
+void polyveck_masking_arithmetic_to_boolean_lowbits(polyveck *v0, const polyveck *v,maskpointveck* pD);
+#define polyveck_masking_decompose DILITHIUM_NAMESPACE(polyveck_masking_decompose)
+void polyveck_masking_decompose(polyveck *v0, polyveck *v1,const polyveck *v,maskpointveck* pD,maskpointveck* pE);
 
 #define polyveck_add DILITHIUM_NAMESPACE(polyveck_add)
 void polyveck_add(polyveck *w, const polyveck *u, const polyveck *v);
@@ -78,8 +98,20 @@ void polyveck_decompose(polyveck *v1, polyveck *v0, const polyveck *v);
 unsigned int polyveck_make_hint(polyveck *h,
                                 const polyveck *v0,
                                 const polyveck *v1);
+
+
+#define polyveck_masking_make_hint DILITHIUM_NAMESPACE(polyveck_masking_make_hint)
+void polyveck_masking_make_hint(polyveck *h,
+                                const polyveck *v0,
+                                const polyveck *v1,
+                                maskpointveck *pd
+                                );
+
 #define polyveck_use_hint DILITHIUM_NAMESPACE(polyveck_use_hint)
 void polyveck_use_hint(polyveck *w, const polyveck *v, const polyveck *h);
+
+#define polyveck_masking_use_hint DILITHIUM_NAMESPACE(polyveck_masking_use_hint)
+void polyveck_masking_use_hint(polyveck *w,const polyveck *h,maskpointveck* pD);
 
 #define polyveck_pack_w1 DILITHIUM_NAMESPACE(polyveck_pack_w1)
 void polyveck_pack_w1(uint8_t r[K*POLYW1_PACKEDBYTES], const polyveck *w1);

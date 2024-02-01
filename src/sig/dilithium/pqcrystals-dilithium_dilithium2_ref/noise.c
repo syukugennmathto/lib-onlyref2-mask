@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "../../common/pqclean_shims/fips202.h"
 #include "noise.h"
 #include "random.h"
@@ -36,31 +37,29 @@ uint32_t small_noise_rejection_256(uint32_t* out_buffer, size_t out_len, uint8_t
         out_buffer[ctr++] = low_noise_bound - t0;
         if((t1 <= (2*low_noise_bound)) && (ctr < out_len))
         out_buffer[ctr++] = low_noise_bound - t1;
-
         if(pos >= in_len)
         break;
     }
     return ctr;
 }
 
-void small_bounded_noise_generation_256(uint32_t *out_buffer, unsigned char* seed, unsigned char nonce)
-{    unsigned int i, ctr;
+void small_bounded_noise_generation_256(int32_t *out_buffer, const uint8_t *seed,uint16_t nonce)
+{    unsigned int i;
+    uint32_t ctr;
     unsigned char inbuf[SEEDBYTES + 1];
     unsigned char outbuf[2 * SHAKE256_RATE];
     uint64_t state[25];
-
-    for (i = 0; i < SEEDBYTES; ++i)
-        inbuf[i] = seed[i];
+    
+    
+    for (i = 0; i < SEEDBYTES; ++i) inbuf[i] = (unsigned char)seed[i];
     inbuf[SEEDBYTES] = nonce;
-
     shake256_absorb(state, inbuf, SEEDBYTES + 1);
     shake256_squeezeblocks_noise(outbuf, 2, state);
-
-    ctr = rej_eta((int32_t *)out_buffer, N, outbuf, 2 * SHAKE256_RATE);
+    ctr = small_noise_rejection_256((uint32_t *)out_buffer, N, outbuf, 2 * SHAKE256_RATE);
 
     if (ctr < N) {
         shake256_squeezeblocks_noise(outbuf, 1, state);
-        rej_eta((int32_t *)out_buffer + ctr, N - ctr, outbuf, SHAKE256_RATE);
+        small_noise_rejection_256((uint32_t *)out_buffer + ctr, N - ctr, outbuf, SHAKE256_RATE);
     }
 }
 
@@ -79,12 +78,12 @@ uint32_t large_noise_rejection_256(uint32_t *out_buffer, size_t out_len, unsigne
         t0 = buffer[pos];
         t0 |= (uint32_t)buffer[pos + 1] << 8;
         t0 |= (uint32_t)buffer[pos + 2] << 16;
-        t0 &= 0x7FFFF;
+        t0 &= MAX_VALUE_2_13;
 
         t1 = buffer[pos + 2] >> 4;
         t1 |= (uint32_t)buffer[pos + 3] << 4;
         t1 |= (uint32_t)buffer[pos + 4] << 12;
-        t1 &= 0x7FFFF;
+        t1 &= MAX_VALUE_2_13;
 
         pos += 5;
 
@@ -103,7 +102,7 @@ uint32_t large_noise_rejection_256(uint32_t *out_buffer, size_t out_len, unsigne
 
 
 // 修正：large_bounded_noise_generation関数を修正
-void large_bounded_noise_generation(poly *r, const uint8_t *seed, unsigned char nonce)
+void large_bounded_noise_generation(poly *r, const uint8_t *seed,uint16_t nonce)
 {
     unsigned int i, ctr;
     unsigned char inbuf[SEEDBYTES + CRHBYTES + 2];

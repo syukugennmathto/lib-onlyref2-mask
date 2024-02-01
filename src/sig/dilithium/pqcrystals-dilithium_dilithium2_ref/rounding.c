@@ -1381,7 +1381,7 @@ uint32_t random_uint32_t_mono(uint32_t r)
 {
     randombytes((uint8_t *)&r, sizeof(uint32_t));
     //if(r <0){r = (-1)*r;}
-    r = r%(1<<12);
+    //r = r%(1<<12);
     return r;
 }
 
@@ -1390,33 +1390,29 @@ int32_t random_int32_t()
     int32_t r;
     randombytes((uint8_t *)&r, sizeof(int32_t));
     //if(r <0){r = (-1)*r;}
-    r = r%(1<<16);
+    //r = r%Q;
     return r;
 }
 
 
-int32_t  new_masking_decompose(int32_t pR0,const int32_t pR) {
+int32_t  new_masking_decompose(int32_t pR0,const int32_t pR,int32_t baseding) {
     
-    int32_t b=0,pR1p=0;
+    int32_t mask = (1 << baseding) - 1;
+    int32_t b=0,pR1p=0,d_1 = (mask>>1)+1;
     int32_t pR1=0;
     int32_t pR1pt=0,pR2=0,pR3=0;
-    int32_t mask = ((1 << 22) - 1);
-    int32_t d = (mask>>1)+1;
-    pR2 = (pR + d);
-    pR3 ^=((43-pR2)>>25)&43;
-    return pR3;
+    
+    pR1 = (pR+127)>>7;
+    //printf("pR1= %d\n",pR1);
+    pR1 = (pR1*11275 +(1<<23))>>24;
+    //printf("pR2= %d\n",pR2);
+    pR1 ^=((43-pR1)>>31)&pR1;
+   // printf("pR3= %d\n",pR3);
+    return pR1;
+    
+
     
 /*
- 
- pR1 = (pR+127)>>7;
- //printf("pR1= %d\n",pR1);
- pR2 = (pR1*11275 +(1<<23))>>24;
- //printf("pR2= %d\n",pR2);
- pR3 ^=((43-pR2)>>31)&43;
-// printf("pR3= %d\n",pR3);
- return pR3;
- 
- 
 #if GAMMA2 == (Q-1)/32
     a1_unsigned = (a1_unsigned * 1025 + (1 << 21)) >> 22;
     a1_unsigned &= 15;
@@ -1438,13 +1434,32 @@ int32_t  new_masking_decompose(int32_t pR0,const int32_t pR) {
 
 }
 
+int32_t  hard_masking_decompose(int32_t pR0,const int32_t pR) {
+    
+    int32_t b=0,pR1p=0;
+    int32_t pR1=0;
+    int32_t pR1pt=0,pR2=0,pR3=0;
+    
+    //int32_t mask = ((1 << 22) - 1);
+    //int32_t d = (mask>>1)+1;
+    pR1 = (pR+127)>>7;
+    pR1 = (pR1*11275 +(1<<23))>>24;
+    pR1 ^=((43-pR1)>>31)&pR1;
+    return pR1;
+    
+}
+
 
 void new_masking_arithmetic_to_boolean_highbits(int32_t* pR2,const int32_t* pR,mask_point* pD)
 {
     int32_t based =alpha;
-    int32_t mask = ((1 << 22) - 1);
+    int32_t mask = ((1 << 23) - 1);
     int32_t b[N]={0,0},pR1p[N]={0,0},pR1pt[N]={0,0},pR1[N]={0,0},pR11[N]={0,0},sd_1[N]={0,0};
-    sd_1[0] = (mask>>1)+1;
+    int32_t ring1[N];
+    int32_t ring0[N];
+    int32_t ring2[N];
+    
+    for(uint32_t i = 0; i < N; ++i){sd_1[i] = (mask>>1)+1;}
 
     //printf("b[2] = %d\n",b[2]);
     
@@ -1458,7 +1473,7 @@ void new_masking_arithmetic_to_boolean_highbits(int32_t* pR2,const int32_t* pR,m
     {
         pD->outside[i] = random_int32_t();
         pR1p[i] = pD->outside[i]; // 同様にpDを逆参照
-        pR1p[0] ^= pR1p[i];
+        pR1p[0] -= pR1p[i];
     }
     //convert
     for(uint32_t j = 1; j < N;++j)
@@ -1468,13 +1483,20 @@ void new_masking_arithmetic_to_boolean_highbits(int32_t* pR2,const int32_t* pR,m
         {
             pD->inside[j][i] = random_int32_t();
             d[i] = pD->inside[j][i]; // 同様にpDを逆参照
-            d[0] ^= d[i];
+            d[0] -= d[i];
         }
         pR1p[j]=pR1p[j]+d[j];
     }
+    //printf("making number...%d\n",pR1p[10]);
+    
+    for(uint32_t i = 0; i < N; ++i){ring1[i] =  ((16 >>1)+1)^ pR1p[i];}
+    //ring3[i] = new_masking_decompose(ring0[5],zoo1[i],10);
+    for(uint32_t i = 0; i < N; ++i){ring2[i] = pR[i] + ring1[i];}
+    for(uint32_t i = 0; i < N; ++i){pR2[i] = ring2[i] >> 4;}
+    
     //printf("d[%d] = %d\n",3,d[3]);
 
-    for(uint32_t i = 0; i < N; ++i){pR2[i]=pR1p[i]>>25;}
+    //for(uint32_t i = 0; i < N; ++i){pR2[i]=(pR1p[i]^pR[i])%Q;}
     
    //for(uint32_t i = 0; i < N; ++i){pR2[i]=new_masking_decompose(pR1[i],pR11[i]);}
     //for(uint32_t i = 0; i < N; ++i){printf("出力値____pR[%d] = %d\n",i,pR2[i]);}
@@ -1482,10 +1504,14 @@ void new_masking_arithmetic_to_boolean_highbits(int32_t* pR2,const int32_t* pR,m
 void new_unmasking_arithmetic_to_boolean_highbits(int32_t* pR,const int32_t* pR1,mask_point pD)
 {
     int32_t based =alpha;
-    int32_t mask = ((1 << 22) - 1);
+    int32_t mask = ((1 << 23) - 1);
 
     int32_t b[N]={0,0},pR1p[N],sd_1[N]={0,0},d[N]={0,0},pR1pt[N]={0,0},pR2[N]={0,0},pR3[N]={0,0},pR11[N]={0,0},pR4[N]={0,0};
-    sd_1[0] = (mask>>1)+1;
+    int32_t ring1[N];
+    int32_t ring0[N];
+    int32_t ring2[N];
+    
+    for(uint32_t i = 0; i < N; ++i){sd_1[i] = (mask>>1)+1;}
 
     for(uint32_t i = 1; i < N; ++i){b[i] = (pR1[i] + sd_1[i]);}
     //convert
@@ -1493,7 +1519,7 @@ void new_unmasking_arithmetic_to_boolean_highbits(int32_t* pR,const int32_t* pR1
     for(uint32_t i = 1; i < N;++i)
     {
         pR1p[i] = pD.outside[i];
-        pR1p[0] ^= pR1p[i];
+        pR1p[0] -= pR1p[i];
     }
     for(int32_t j = 1; j < N;++j)
     {
@@ -1501,12 +1527,16 @@ void new_unmasking_arithmetic_to_boolean_highbits(int32_t* pR,const int32_t* pR1
         for(uint32_t i = 1; i < N;++i)
         {
             d[i] = pD.inside[j][i];
-            d[0] ^= d[i];
+            d[0] -= d[i];
         }
         pR1p[j]=pR1p[j]+d[j];
     }
-    for(uint32_t i = 0; i < N; ++i){pR[i] ^= ((43-pR1p[i])>>25)&43;}
-    //for(uint32_t i = 0; i < N; ++i){pR2[i]=pR1p[i]>>base;}
+    
+    for(uint32_t i = 0; i < N; ++i){ring1[i] =  ((16 >>1)+1)^ pR1p[i];}
+    //ring3[i] = new_masking_decompose(ring0[5],zoo1[i],10);
+    for(uint32_t i = 0; i < N; ++i){ring2[i] = pR1[i] << 4;}
+    for(uint32_t i = 0; i < N; ++i){pR[i] = ring2[i] - ring1[i];}
+
     //for(uint32_t i = 0; i < N; ++i){pR[i]=new_masking_decompose(pR3[i],pR2[i]);}
     
     //for(uint32_t i = 0; i < N; ++i)pR11[i] = (pR1pt[i]/11275 -(1<<23))<<24;
@@ -1528,7 +1558,7 @@ void new_nosking_arithmetic_to_boolean_highbits(int32_t* pR1,const int32_t* pR,m
    // printf("b[2] = %d\n",b[2]);
     pR1p[0] = b[0];
     
-    for(uint32_t i = 0; i < N; ++i){pR1[i]=new_masking_decompose(pR1pt[i],pR[i]);}
+   // for(uint32_t i = 0; i < N; ++i){pR1[i]=new_masking_decompose(pR1pt[i],pR[i]);}
     
     //Masking function
     for(uint32_t i = 1; i < N;++i)

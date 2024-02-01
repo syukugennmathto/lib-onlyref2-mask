@@ -1,20 +1,26 @@
 #ifndef PARAMS_H
 #define PARAMS_H
 
+#include <stdint.h>
 #include "config.h"
 
-#define SEEDBYTES 32
-#define CRHBYTES 64
+
+
 #define N 256
 #define Q 8380417
-#define D 13
+#define D 13 //D=13
+#define SEEDBYTES 32
+#define CRHBYTES 64
 #define ROOT_OF_UNITY 1753
 #define dilithium_n N
 #define dilithium_gamma 19
-#define large_noise_bound (1 << dilithium_gamma) - 1
+#define large_noise_bound alpha
 #define dilithium_nu 5
 #define low_noise_bound dilithium_nu
-
+#define shares 11
+#define MAX_SIGN 1000
+#define MAX_VALUE_2_13 ((1U << 13) - 1)
+#define badominton 31
 
 
 
@@ -30,29 +36,7 @@
 #define OMEGA 80
 #define dilithium_k K
 #define dilithium_l L
-
-
-
-#elif DILITHIUM_MODE == 3
-#define K 6
-#define L 5
-#define ETA 4
-#define TAU 49
-#define BETA 196
-#define GAMMA1 (1 << 19)
-#define GAMMA2 ((Q-1)/32)
-#define OMEGA 55
-
-#elif DILITHIUM_MODE == 5
-#define K 8
-#define L 7
-#define ETA 2
-#define TAU 60
-#define BETA 120
-#define GAMMA1 (1 << 19)
-#define GAMMA2 ((Q-1)/32)
-#define OMEGA 75
-
+#define alpha 2*GAMMA2
 #endif
 
 #define POLYT1_PACKEDBYTES  320
@@ -83,5 +67,58 @@
                                + K*POLYETA_PACKEDBYTES \
                                + K*POLYT0_PACKEDBYTES)
 #define CRYPTO_BYTES (SEEDBYTES + L*POLYZ_PACKEDBYTES + POLYVECH_PACKEDBYTES)
+#define masking_CRYPTO_BYTES (SEEDBYTES + L*POLYZ_PACKEDBYTES + POLYVECH_PACKEDBYTES +N*K*(1+N))
+
+typedef struct{
+    uint8_t a[SEEDBYTES];
+    uint8_t b[SEEDBYTES];
+    uint8_t c[K*POLYW1_PACKEDBYTES];
+    uint8_t d[K*POLYW1_PACKEDBYTES];
+} cst_8t;
+
+typedef struct{
+    uint32_t sm[shares+1][shares+1];
+} pMsm;
+
+typedef struct{
+    uint32_t gen[shares+1];
+} svec;
+
+typedef struct{
+    pMsm pMs1;
+    pMsm pMs2[6];
+    pMsm pMs3[6];
+    pMsm pMs4[6];
+    pMsm pMs5;
+} pMtM;
+
+typedef struct{
+    svec pMm1;
+    svec pMm2[shares+1];
+    pMtM pMm3[shares+1];
+} pMtL;
+
+typedef struct{
+    uint32_t outside[N];
+    uint32_t inside[N][N];
+} mask_point;
+
+typedef struct {
+  mask_point coeffs[N];
+} mask_point_poly;
+
+typedef struct {
+    mask_point_poly vec[K];
+} maskpointveck;
+
+
+
+typedef struct {
+  int32_t coeffs[N];
+} poly;
+
+typedef struct {
+  uint32_t coeffs[N];
+} upoly;
 
 #endif
